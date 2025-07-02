@@ -1,0 +1,32 @@
+# Virtual environment
+venv/
+
+# Python cache files
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Build/dist/eggs
+build/
+dist/
+*.egg-info/
+
+# Flask runtime
+instance/
+*.db
+*.sqlite3
+
+# Logs and secrets
+*.log
+.env
+
+# IDE settings
+.vscode/
+.idea/
+
+# OS-specific
+.DS_Store
+Thumbs.db
+
+venv/
