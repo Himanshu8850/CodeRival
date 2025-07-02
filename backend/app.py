@@ -13,16 +13,11 @@ load_dotenv()
 
 def create_app():
     app = Flask(__name__)
+    # socketio = SocketIO(app, cors_allowed_origins="*")  # or frontend origin
     
     # Configuration
     app.config['MONGO_URI'] = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/beizzati_tracker')
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-super-secret-jwt-key')
-    # print("MONGO_URI:", os.getenv('MONGODB_URI'))
-    # print("MONGO_URI:", os.getenv('MONGODB_URI'))
-    # print("MONGO_URI:", os.getenv('MONGODB_URI'))
-    # print("MONGO_URI:", os.getenv('MONGODB_URI'))
-    # print("MONGO_URI:", os.getenv('MONGODB_URI'))
-    # print("MONGO_URI:", os.getenv('MONGODB_URI'))
     # Initialize extensions
     CORS(app)
     mongo = PyMongo(app)
