@@ -19,7 +19,7 @@ def create_app():
     app.config['MONGO_URI'] = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/beizzati_tracker')
     app.config['JWT_SECRET_KEY'] = os.getenv('JWT_SECRET_KEY', 'your-super-secret-jwt-key')
     # Initialize extensions
-    CORS(app)
+    CORS(app, supports_credentials=True)
     mongo = PyMongo(app)
     jwt = JWTManager(app)
     

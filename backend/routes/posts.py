@@ -4,7 +4,7 @@ from models.post import Post
 from models.user import User
 from bson import ObjectId
 import json
-
+import pytesseract
 posts_bp = Blueprint('posts', __name__)
 
 def convert_objectids_to_strings(obj):
@@ -22,44 +22,69 @@ def init_posts_routes(mongo):
     post_model = Post(mongo.db)
     user_model = User(mongo.db)
     
+    @posts_bp.route('', methods=['POST'])
     @posts_bp.route('/', methods=['POST'])
     @jwt_required()
     def create_post():
         try:
             current_user_id = get_jwt_identity()
-            data = request.get_json()
-            
-            content = data.get('content')
-            is_beizzati = data.get('is_beizzati', False)
-            mentioned_usernames = data.get('mentioned_users', [])
-            
+
+            content = request.form.get('content')
+            is_beizzati = request.form.get('is_beizzati') == 'true'
+            mentioned_usernames = json.loads(request.form.get('mentioned_users', '[]'))
+            image_file = request.files.get('image')
+
             if not content:
                 return jsonify({'error': 'Content is required'}), 400
-            
-            # Convert usernames to user IDs
+
+            if is_beizzati:
+                if not image_file:
+                    return jsonify({'error': 'Image is required for Beijjati post'}), 400
+                if not verify_image_contains_beijjati_evidence(image_file):
+                    return jsonify({'error': 'Image does not qualify as Beijjati'}), 400
+
+            # Get mentioned user IDs
             mentioned_user_ids = []
             for username in mentioned_usernames:
                 user = user_model.get_user_by_username(username)
                 if user:
                     mentioned_user_ids.append(str(user['_id']))
-            
+                    if is_beizzati:
+                        user_model.increment_beijjati_count(user['_id'])
+
             post_id = post_model.create_post(
-                current_user_id, 
-                content, 
-                is_beizzati, 
+                current_user_id,
+                content,
+                is_beizzati,
                 mentioned_user_ids
             )
-            
+
             if not post_id:
                 return jsonify({'error': 'Failed to create post'}), 400
-            
+
             return jsonify({
                 'message': 'Post created successfully',
                 'post_id': post_id
             }), 201
-            
+
         except Exception as e:
             return jsonify({'error': str(e)}), 500
+
+
+    def verify_image_contains_beijjati_evidence(image_file):
+    # Dummy logic for now, replace with Gemini/Vision API/OCR later
+        import pytesseract
+        from PIL import Image
+        try:
+            img = Image.open(image_file)
+            text = pytesseract.image_to_string(img).lower()
+
+            if "solved" in text and any(q in text for q in ["q1", "q2", "q3", "q4"]):
+                return True
+            return False
+        except Exception as e:
+            print(f"Image processing error: {e}")
+            return False
     
     @posts_bp.route('/feed', methods=['GET'])
     @jwt_required()

@@ -1,32 +1,36 @@
-import React, { useState } from 'react';
-import { Send, Users } from 'lucide-react';
-import { postsAPI, usersAPI } from '../services/api';
-import type { Post, User } from '../services/api';
+import React, { useState } from "react";
+import { Send, Users } from "lucide-react";
+import { postsAPI, usersAPI } from "../services/api";
+import type { Post, User } from "../services/api";
 
 interface PostFormProps {
   onPostCreated: (post: Post) => void;
 }
 
 const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState("");
   const [isBeizzati, setisBeizzati] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState('');
+  const [mentionQuery, setMentionQuery] = useState("");
   const [mentionedUsers, setMentionedUsers] = useState<User[]>([]);
   const [searchResults, setSearchResults] = useState<User[]>([]);
   const [showMentionSearch, setShowMentionSearch] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [image, setImage] = useState<File | null>(null);
 
   const handleMentionSearch = async (query: string) => {
     setMentionQuery(query);
     if (query.trim().length > 1) {
       try {
         const response = await usersAPI.searchUsers(query);
-        setSearchResults(response.users.filter(user => 
-          !mentionedUsers.find(mentioned => mentioned._id === user._id)
-        ));
+        setSearchResults(
+          response.users.filter(
+            (user) =>
+              !mentionedUsers.find((mentioned) => mentioned._id === user._id)
+          )
+        );
         setShowMentionSearch(true);
       } catch (error) {
-        console.error('Search failed:', error);
+        console.error("Search failed:", error);
         setSearchResults([]);
       }
     } else {
@@ -37,13 +41,13 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
 
   const addMentionedUser = (user: User) => {
     setMentionedUsers([...mentionedUsers, user]);
-    setMentionQuery('');
+    setMentionQuery("");
     setShowMentionSearch(false);
     setSearchResults([]);
   };
 
   const removeMentionedUser = (userId: string) => {
-    setMentionedUsers(mentionedUsers.filter(user => user._id !== userId));
+    setMentionedUsers(mentionedUsers.filter((user) => user._id !== userId));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -53,42 +57,46 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
     setLoading(true);
 
     try {
-      const mentionedUsernames = mentionedUsers.map(user => user.username);
-      const response = await postsAPI.createPost(content, isBeizzati, mentionedUsernames);
-      
-      // Create a mock post object for immediate UI update
+      const mentionedUsernames = mentionedUsers.map((user) => user.username);
+
+      const formData = new FormData();
+      formData.append("content", content);
+      formData.append("is_beizzati", isBeizzati.toString());
+      formData.append("mentioned_users", JSON.stringify(mentionedUsernames));
+      if (image) formData.append("image", image);
+
+      const response = await postsAPI.createPostWithImage(formData);
       const newPost: Post = {
         _id: response.post_id,
-        author_id: 'current-user-id', // This would be filled by the API normally
+        author_id: "current-user-id",
         author: {
-          _id: 'current-user-id',
-          username: 'You',
-          email: '',
+          _id: "current-user-id",
+          username: "You",
+          email: "",
           beijjati_count: 0,
           friends: [],
           friend_requests_sent: [],
           friend_requests_received: [],
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
         },
         content,
         is_beizzati: isBeizzati,
-        mentioned_users: mentionedUsers.map(user => user._id),
+        mentioned_users: mentionedUsers.map((user) => user._id),
         mentioned_users_details: mentionedUsers,
         visible_to: [],
         likes: [],
         comments: [],
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
       };
 
       onPostCreated(newPost);
-      
-      // Reset form
-      setContent('');
+      setContent("");
       setisBeizzati(false);
       setMentionedUsers([]);
-      setMentionQuery('');
+      setMentionQuery("");
+      setImage(null);
     } catch (error) {
-      console.error('Failed to create post:', error);
+      console.error("Failed to create post:", error);
     } finally {
       setLoading(false);
     }
@@ -111,9 +119,11 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
         <div className="mb-4">
           <div className="flex items-center space-x-2 mb-2">
             <Users className="w-4 h-4 text-gray-500" />
-            <span className="text-sm font-medium text-gray-700">Mention users:</span>
+            <span className="text-sm font-medium text-gray-700">
+              Mention users:
+            </span>
           </div>
-          
+
           {/* Selected mentioned users */}
           {mentionedUsers.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-2">
@@ -157,9 +167,13 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
                   >
                     <div className="flex items-center space-x-2">
                       <div className="w-6 h-6 bg-gray-300 rounded-full flex items-center justify-center">
-                        <span className="text-xs font-medium">{user.username[0].toUpperCase()}</span>
+                        <span className="text-xs font-medium">
+                          {user.username[0].toUpperCase()}
+                        </span>
                       </div>
-                      <span className="text-sm font-medium">{user.username}</span>
+                      <span className="text-sm font-medium">
+                        {user.username}
+                      </span>
                     </div>
                   </button>
                 ))}
@@ -178,11 +192,22 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
               className="h-4 w-4 text-red-600 focus:ring-red-500 border-gray-300 rounded"
             />
             <span className="ml-2 text-sm font-medium text-gray-700">
-              🔥 This is a Beijjati post (will increment mentioned users' beijjati count)
+              🔥 This is a Beijjati post (will increment mentioned users'
+              beijjati count)
             </span>
           </label>
         </div>
-
+        <div className="mb-4">
+          <label className="block text-sm font-medium text-gray-700">
+            Attach Image:
+          </label>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImage(e.target.files?.[0] || null)}
+            className="mt-1"
+          />
+        </div>
         {/* Submit button */}
         <div className="flex justify-end">
           <button
@@ -191,7 +216,7 @@ const PostForm: React.FC<PostFormProps> = ({ onPostCreated }) => {
             className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-lg shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:bg-gray-300 disabled:cursor-not-allowed"
           >
             {loading ? (
-              'Posting...'
+              "Posting..."
             ) : (
               <>
                 <Send className="w-4 h-4 mr-2" />
