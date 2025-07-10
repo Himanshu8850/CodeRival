@@ -5,6 +5,14 @@ from models.user import User
 from bson import ObjectId
 import json
 import pytesseract
+import google.generativeai as genai
+from PIL import Image
+import io
+import os
+from dotenv import load_dotenv
+load_dotenv()
+GEMINI_KEY=os.getenv('GEMINI_KEY')
+genai.configure(api_key=GEMINI_KEY)
 posts_bp = Blueprint('posts', __name__)
 
 def convert_objectids_to_strings(obj):
@@ -49,6 +57,7 @@ def init_posts_routes(mongo):
                 user = user_model.get_user_by_username(username)
                 if user:
                     mentioned_user_ids.append(str(user['_id']))
+                    print("✅ Final unique mentioned_user_ids:", mentioned_user_ids)
                     if is_beizzati:
                         user_model.increment_beijjati_count(user['_id'])
 
@@ -72,18 +81,42 @@ def init_posts_routes(mongo):
 
 
     def verify_image_contains_beijjati_evidence(image_file):
-    # Dummy logic for now, replace with Gemini/Vision API/OCR later
-        import pytesseract
-        from PIL import Image
         try:
-            img = Image.open(image_file)
-            text = pytesseract.image_to_string(img).lower()
+            # Convert file stream to bytes
+            image_bytes = image_file.read()
+            image_file.seek(0)  # Reset pointer so Flask can use it again if needed
 
-            if "solved" in text and any(q in text for q in ["q1", "q2", "q3", "q4"]):
-                return True
-            return False
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            
+            response = model.generate_content([
+                "Does this image show proof of solving a coding question like 'Q1', 'Q2', 'Q3' or 'Q4' with 'solved'? Respond with 'yes' or 'no' and optionally mention keywords found.",
+                {
+                    'mime_type': image_file.mimetype,
+                    'data': image_bytes,
+                }
+            ])
+
+            text = response.text.strip().lower()
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+            print("Gemini response:", text)
+
+            return 'yes' in text  # Gemini responds with "yes" or "no"
+
         except Exception as e:
-            print(f"Image processing error: {e}")
+            print(f"Gemini OCR error: {e}")
+            print(f"Gemini OCR error: {e}")
+            print(f"Gemini OCR error: {e}")
+            print(f"Gemini OCR error: {e}")
+            print(f"Gemini OCR error: {e}")
+            print(f"Gemini OCR error: {e}")
             return False
     
     @posts_bp.route('/feed', methods=['GET'])

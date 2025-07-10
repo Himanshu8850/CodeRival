@@ -47,7 +47,7 @@ class User:
             return None
     
     def get_user_by_username(self, username):
-        return self.collection.find_one({"username": username})
+        return self.collection.find_one({"username": {"$regex": f"^{username}$", "$options": "i"}})
     
     def search_users(self, query):
         return list(self.collection.find({
